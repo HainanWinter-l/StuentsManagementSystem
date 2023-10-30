@@ -11,7 +11,7 @@ from qfluentwidgets import (
 )
 from PyQt5.QtWidgets import QWidget, QHeaderView, QTableWidgetItem
 from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtCore import Qt, QThread
+from PyQt5.QtCore import Qt
 from threading import Thread
 from Class.Student import Student
 from Design.Ui_ManagementPage import Ui_ManagementPage
@@ -58,6 +58,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         self.maxRowCount = 16
         # 导出时的状态栏
         self.stateTooltip = None
+        self.maxnRowSize = 40
 
     def getDataFromDataBase(self, data: list[Row] | None = None):
         """从数据库读取数据并进行分页"""
@@ -138,7 +139,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         # 获得页面数并初始化页面数据
         self.pageIndex = int(self.pageIndexLabel.text())
         self.pageData = self.tableData[self.pageIndex - 1]
-
+        self.TableWidget.verticalHeader().setDefaultSectionSize(self.maxnRowSize)
         # 设置表格行数
         self.rowCount = len(self.pageData)
         self.columnCount = 6
@@ -149,9 +150,15 @@ class ManagementPage(QWidget, Ui_ManagementPage):
             for cell, columnIndex in zip(line, range(self.columnCount)):
                 item = QTableWidgetItem(str(cell))
                 if columnIndex == 0:
-                    item.setFlags(Qt.ItemIsEnabled)
+                    item.setFlags(
+                        Qt.ItemIsSelectable
+                        | Qt.ItemIsEnabled
+                        | Qt.ItemIsDropEnabled
+                        | Qt.ItemIsUserCheckable
+                        | Qt.ItemIsDragEnabled
+                    )
                 self.TableWidget.setItem(rowIndex, columnIndex, item)
-            self.TableWidget.setRowHeight(rowIndex, 40)
+            self.TableWidget.setRowHeight(rowIndex, self.maxnRowSize)
 
     def isRightId(self, text: str) -> bool:
         """判断学号字段是否合理"""
@@ -265,6 +272,8 @@ class ManagementPage(QWidget, Ui_ManagementPage):
             self.TableWidget.currentColumn(),
             self.TableWidget.currentItem(),
         )
+        if self.currentColumn == 0:
+            return
         # 表头
         self.header = {
             1: "student_name",
@@ -413,14 +422,19 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         """清空输入的搜索文本事件"""
         for tbx in self.tbxs.keys():
             tbx.setText(None)
+        # 启用其他按钮
+        self.addBtn.setEnabled(True)
+        self.deleteBtn.setEnabled(True)
         # 显示数据库全部内容
-        self.tableData = searchStudent(self.db, self.cur)
         updateUiThread = Thread(target=self.freshTable, args=(False,))
         updateUiThread.start()
         updateUiThread.join()
 
     def queryBtnClicked(self):
         """查询学生信息事件"""
+        # 禁用其他按钮
+        self.addBtn.setEnabled(False)
+        self.deleteBtn.setEnabled(False)
         # where语句查询
         self.command = " where "
         self.isAdded = False
@@ -460,16 +474,18 @@ class ManagementPage(QWidget, Ui_ManagementPage):
 
     def exportBtnClicked(self):
         """导出按钮点击事件"""
+
         def changeExportStatusEnable() -> None:
-                """改变状态栏状态"""
-                if self.stateTooltip:
-                    self.stateTooltip.setContent("文件导出成功" + " 😆")
-                    self.stateTooltip.setState(True)
-                    self.stateTooltip = None
-                else:
-                    self.stateTooltip = StateToolTip("导出中", "请稍后", self.window())
-                    self.stateTooltip.move(self.stateTooltip.getSuitablePos())
-                    self.stateTooltip.show()
+            """改变状态栏状态"""
+            if self.stateTooltip:
+                self.stateTooltip.setContent("文件导出成功" + " 😆")
+                self.stateTooltip.setState(True)
+                self.stateTooltip = None
+            else:
+                self.stateTooltip = StateToolTip("导出中", "请稍后", self.window())
+                self.stateTooltip.move(self.stateTooltip.getSuitablePos())
+                self.stateTooltip.show()
+
         def exportToExcel():
             """导出页面为xlsx文件"""
             # 创建 excel 文件
@@ -491,6 +507,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
             excelFile.save("学生信息表.xlsx")
             excelFile.close()
             excelApp.quit()
+
         # 显示状态栏
         changeExportStatusEnable()
         # 异步线程导出文件
