@@ -1,4 +1,3 @@
-from concurrent.futures import thread
 import xlwings as xw
 from pyodbc import Row
 from qfluentwidgets import (
@@ -7,7 +6,6 @@ from qfluentwidgets import (
     InfoBarIcon,
     LineEdit,
     StateToolTip,
-    ToolTipFilter,
 )
 from PyQt5.QtWidgets import QWidget, QHeaderView, QTableWidgetItem
 from PyQt5.QtGui import QCloseEvent
