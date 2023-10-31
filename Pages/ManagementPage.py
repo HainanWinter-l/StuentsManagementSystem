@@ -7,10 +7,9 @@ from qfluentwidgets import (
     LineEdit,
     StateToolTip,
 )
-from PyQt5.QtWidgets import QWidget, QHeaderView, QTableWidgetItem
-from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtCore import Qt
-from threading import Thread
+from PyQt6.QtWidgets import QWidget, QHeaderView, QTableWidgetItem
+from PyQt6.QtGui import QCloseEvent
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QMutex
 from Class.Student import Student
 from Design.Ui_ManagementPage import Ui_ManagementPage
 from Shared.database import (
@@ -20,6 +19,175 @@ from Shared.database import (
     deleteStudent,
     updateStudent,
 )
+
+# 线程锁
+exportLocker, freshLocker, switchLocker = QMutex(), QMutex(), QMutex()
+
+
+class excelExporter(QThread):
+    """异步导出线程类"""
+
+    finished = pyqtSignal()
+
+    def __init__(self, page, parent=None) -> None:
+        super().__init__(parent)
+        self.page = page
+
+    def run(self) -> None:
+        """异步执行的内容"""
+        exportLocker.lock()
+        self.export()
+        self.closeTipAndEnableBtn()
+        self.finished.emit()
+        exportLocker.unlock()
+
+    def export(self) -> None:
+        """导出页面为xlsx文件"""
+        # 创建 excel 文件
+        excelApp = xw.App(False)
+        excelFile = excelApp.books.add()
+        excelFile.sheets.add("sheet")
+        # 设置表头
+        sheet = excelFile.sheets[0]
+        headers = {"A": "学号", "B": "姓名", "C": "专业", "D": "班级", "E": "年龄", "F": "成绩"}
+        for i, header in headers.items():
+            sheet[i + "1"].value = header
+        hight = 2
+        for page in self.page.tableData:
+            for line in page:
+                for header, cell in zip(headers.keys(), line):
+                    sheet["{}{}".format(header, hight)].value = str(cell)
+                hight += 1
+        # 保存信息
+        excelFile.save("学生信息表.xlsx")
+        excelFile.close()
+        excelApp.quit()
+
+    def closeTipAndEnableBtn(self) -> None:
+        """清空提示并启用按钮"""
+        if self.page.stateTooltip:
+            self.page.stateTooltip.setContent("文件导出成功" + " 😆")
+            self.page.stateTooltip.setState(True)
+            self.page.stateTooltip = None
+        self.page.exportBtn.setEnabled(True)
+
+
+class tableFresher(QThread):
+    """异步更新表格内容类"""
+
+    finished = pyqtSignal()
+
+    def __init__(self, page, parent=None) -> None:
+        super().__init__(parent)
+        self.page = page
+
+    def run(self) -> None:
+        freshLocker.lock()
+        self.freshTable()
+        freshLocker.unlock()
+        self.finished.emit()
+
+    def initTableData(self):
+        """初始化并显示表格数据"""
+        # 使用数据库初始化显示表格
+        if self.page.tableData == []:  # 异常处理
+            self.page.TableWidget.setRowCount(0)
+            return
+        # 获得页面数并初始化页面数据
+        self.page.pageIndex = int(self.page.pageIndexLabel.text())
+        self.page.pageData = self.page.tableData[self.page.pageIndex - 1]
+        self.page.TableWidget.verticalHeader().setDefaultSectionSize(
+            self.page.maxnRowSize
+        )
+        # 设置表格行数
+        self.page.rowCount = len(self.page.pageData)
+        self.page.columnCount = 6
+        self.page.TableWidget.setRowCount(self.page.rowCount)
+
+        # 更新表格数据
+        for line, rowIndex in zip(self.page.pageData, range(self.page.rowCount)):
+            for cell, columnIndex in zip(line, range(self.page.columnCount)):
+                item = QTableWidgetItem(str(cell))
+                if columnIndex == 0:
+                    item.setFlags(
+                        Qt.ItemFlag(
+                            Qt.ItemFlag.ItemIsSelectable
+                            | Qt.ItemFlag.ItemIsEnabled
+                            | Qt.ItemFlag.ItemIsDropEnabled
+                            | Qt.ItemFlag.ItemIsUserCheckable
+                            | Qt.ItemFlag.ItemIsDragEnabled
+                        )
+                    )
+                self.page.TableWidget.setItem(rowIndex, columnIndex, item)
+            self.page.TableWidget.setRowHeight(rowIndex, self.page.maxnRowSize)
+
+    def freshTable(self):
+        """更新表格数据"""
+        # 如果没有初始化好数据信息，初始化数据信息
+        if not self.page.isHasData:
+            self.page.tableData = self.page.getDataFromDataBase()
+        self.page.isHasData = False
+        # 获得页面总数和页码
+        self.page.pageCount = len(self.page.tableData)
+        nowIndex = int(self.page.pageIndexLabel.text())
+        # 页码在不在合理的范围内时初始化为首页
+        if nowIndex > self.page.pageCount or (
+            nowIndex == 0 and self.page.pageCount > 0
+        ):
+            self.page.pageIndexLabel.setText("1")
+        # 更新显示当前页面
+        self.page.pageCountLabel.setText(str(self.page.pageCount))
+        self.initTableData()
+
+
+class tableSwitcher(QThread):
+    """异步更新表格内容类"""
+
+    finished = pyqtSignal()
+
+    def __init__(self, page, parent=None) -> None:
+        super().__init__(parent)
+        self.page = page
+
+    def run(self) -> None:
+        freshLocker.lock()
+        self.initTableData()
+        freshLocker.unlock()
+        self.finished.emit()
+
+    def initTableData(self):
+        """初始化并显示表格数据"""
+        # 使用数据库初始化显示表格
+        if self.page.tableData == []:  # 异常处理
+            self.page.TableWidget.setRowCount(0)
+            return
+        # 获得页面数并初始化页面数据
+        self.page.pageIndex = int(self.page.pageIndexLabel.text())
+        self.page.pageData = self.page.tableData[self.page.pageIndex - 1]
+        self.page.TableWidget.verticalHeader().setDefaultSectionSize(
+            self.page.maxnRowSize
+        )
+        # 设置表格行数
+        self.page.rowCount = len(self.page.pageData)
+        self.page.columnCount = 6
+        self.page.TableWidget.setRowCount(self.page.rowCount)
+
+        # 更新表格数据
+        for line, rowIndex in zip(self.page.pageData, range(self.page.rowCount)):
+            for cell, columnIndex in zip(line, range(self.page.columnCount)):
+                item = QTableWidgetItem(str(cell))
+                if columnIndex == 0:
+                    item.setFlags(
+                        Qt.ItemFlag(
+                            Qt.ItemFlag.ItemIsSelectable
+                            | Qt.ItemFlag.ItemIsEnabled
+                            | Qt.ItemFlag.ItemIsDropEnabled
+                            | Qt.ItemFlag.ItemIsUserCheckable
+                            | Qt.ItemFlag.ItemIsDragEnabled
+                        )
+                    )
+                self.page.TableWidget.setItem(rowIndex, columnIndex, item)
+            self.page.TableWidget.setRowHeight(rowIndex, self.page.maxnRowSize)
 
 
 def toStudentTuple(data: list):
@@ -57,6 +225,35 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         # 导出时的状态栏
         self.stateTooltip = None
         self.maxnRowSize = 40
+        self.isHasData = False
+        # 初始化异步线程们
+        self.initExportThread()
+        self.initFreshThread()
+        self.initSwitchThread()
+
+    def initExportThread(self):
+        """初始化导出为excel文件的异步线程"""
+        self.exportThread = QThread()
+        self.exporter = excelExporter(self)
+        self.exporter.moveToThread(self.exportThread)
+        self.exportThread.started.connect(self.exporter.run)
+        self.exporter.finished.connect(self.exportThread.quit)
+
+    def initFreshThread(self):
+        """初始化刷新表格的异步线程"""
+        self.freshThread = QThread()
+        self.fresher = tableFresher(self)
+        self.fresher.moveToThread(self.freshThread)
+        self.freshThread.started.connect(self.fresher.run)
+        self.fresher.finished.connect(self.freshThread.quit)
+
+    def initSwitchThread(self):
+        """初始化切换页面的异步线程"""
+        self.switchThread = QThread()
+        self.switcher = tableSwitcher(self)
+        self.switcher.moveToThread(self.switchThread)
+        self.switchThread.started.connect(self.switcher.run)
+        self.switcher.finished.connect(self.switchThread.quit)
 
     def getDataFromDataBase(self, data: list[Row] | None = None):
         """从数据库读取数据并进行分页"""
@@ -106,7 +303,9 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         """初始化表格"""
         # 设置自适应表头
         self.TableWidget.horizontalHeader().setStretchLastSection(True)
-        self.TableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.TableWidget.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         # 初始化显示页面
         self.pageIndexLabel.setText("1" if self.tableData != [] else "0")
         self.pageCountLabel.setText(str(self.pageCount))
@@ -124,9 +323,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         # 设置表格的修改内容事件
         self.TableWidget.cellChanged.connect(self.cellChanged)
         # 显示数据
-        updateUiThead = Thread(target=self.initTableData)
-        updateUiThead.start()
-        updateUiThead.join()
+        self.switchThread.start()
 
     def initTableData(self):
         """初始化并显示表格数据"""
@@ -149,11 +346,13 @@ class ManagementPage(QWidget, Ui_ManagementPage):
                 item = QTableWidgetItem(str(cell))
                 if columnIndex == 0:
                     item.setFlags(
-                        Qt.ItemIsSelectable
-                        | Qt.ItemIsEnabled
-                        | Qt.ItemIsDropEnabled
-                        | Qt.ItemIsUserCheckable
-                        | Qt.ItemIsDragEnabled
+                        Qt.ItemFlag(
+                            Qt.ItemFlag.ItemIsSelectable
+                            | Qt.ItemFlag.ItemIsEnabled
+                            | Qt.ItemFlag.ItemIsDropEnabled
+                            | Qt.ItemFlag.ItemIsUserCheckable
+                            | Qt.ItemFlag.ItemIsDragEnabled
+                        )
                     )
                 self.TableWidget.setItem(rowIndex, columnIndex, item)
             self.TableWidget.setRowHeight(rowIndex, self.maxnRowSize)
@@ -254,11 +453,8 @@ class ManagementPage(QWidget, Ui_ManagementPage):
             headerIndex, checkFunc = (4, self.isRightAge)
         elif head == "gpa":
             headerIndex, checkFunc = (5, isFloat)
-        # 异步线程更新UI
-        thread = Thread(target=setTableDefalutDate, args=(headerIndex,))
         if self.currentColumn == headerIndex and not checkFunc(text):
-            thread.start()
-            thread.join()
+            setTableDefalutDate(headerIndex)
             return False
         return True
 
@@ -303,24 +499,8 @@ class ManagementPage(QWidget, Ui_ManagementPage):
                     ),
                 ),
             )
-            thread = Thread(target=self.freshTable)
-            thread.start()
-            thread.join()
-
-    def freshTable(self, isHasData: bool = False):
-        """更新表格数据"""
-        # 如果没有初始化好数据信息，初始化数据信息
-        if not isHasData:
-            self.tableData = self.getDataFromDataBase()
-        # 获得页面总数和页码
-        self.pageCount = len(self.tableData)
-        nowIndex = int(self.pageIndexLabel.text())
-        # 页码在不在合理的范围内时初始化为首页
-        if nowIndex > self.pageCount or (nowIndex == 0 and self.pageCount > 0):
-            self.pageIndexLabel.setText("1")
-        # 更新显示当前页面
-        self.pageCountLabel.setText(str(self.pageCount))
-        self.initTableData()
+            self.isHasData = False
+            self.freshThread.start()
 
     def addBtnClicked(self):
         """添加行事件"""
@@ -331,9 +511,9 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         # 如果能成功插入数据库
         if insertStudent(self.db, self.cur, Student.fromTuple(toStudentTuple(data))):
             # 更新表格
-            updateUiThread = Thread(target=self.freshTable, args=(False,))
-            updateUiThread.start()
-            updateUiThread.join()
+            self.isHasData = False
+            self.freshThread.start()
+
             # 添加成功窗口
             Flyout.create(
                 icon=InfoBarIcon.SUCCESS,
@@ -357,7 +537,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         self.pageIndexLabel.setText(
             str(self.pageIndex - 1 if self.pageIndex - 1 > 0 else self.pageIndex)
         )
-        self.initTableData()
+        self.switchThread.start()
 
     def rightArrowBtnClicked(self):
         """下一页事件"""
@@ -368,7 +548,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
                 else self.pageIndex
             )
         )
-        self.initTableData()
+        self.switchThread.start()
 
     def gotoBtnClicked(self):
         """跳转页面事件"""
@@ -386,7 +566,7 @@ class ManagementPage(QWidget, Ui_ManagementPage):
             return
         # 设置页面并更新表格内容
         self.pageIndexLabel.setText(where)
-        self.initTableData()
+        self.switchThread.start()
 
     def deleteBtnClicked(self):
         """删除一列数据事件"""
@@ -412,27 +592,20 @@ class ManagementPage(QWidget, Ui_ManagementPage):
             target=self.deleteBtn,
             parent=self.window(),
         )
-        updateUiThread = Thread(target=self.freshTable, args=(False,))
-        updateUiThread.start()
-        updateUiThread.join()
+        self.isHasData = False
+        self.freshThread.start()
 
     def clearSearchBtnClicked(self):
         """清空输入的搜索文本事件"""
         for tbx in self.tbxs.keys():
-            tbx.setText(None)
-        # 启用其他按钮
-        self.addBtn.setEnabled(True)
-        self.deleteBtn.setEnabled(True)
+            tbx.setText("")
+
         # 显示数据库全部内容
-        updateUiThread = Thread(target=self.freshTable, args=(False,))
-        updateUiThread.start()
-        updateUiThread.join()
+        self.isHasData = False
+        self.freshThread.start()
 
     def queryBtnClicked(self):
         """查询学生信息事件"""
-        # 禁用其他按钮
-        self.addBtn.setEnabled(False)
-        self.deleteBtn.setEnabled(False)
         # where语句查询
         self.command = " where "
         self.isAdded = False
@@ -466,54 +639,20 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         self.tableData = self.getDataFromDataBase(
             searchStudent(self.db, self.cur, self.command)
         )
-        updateUiThread = Thread(target=self.freshTable, args=(True,))
-        updateUiThread.start()
-        updateUiThread.join()
+        self.isHasData = True
+        self.freshThread.start()
 
     def exportBtnClicked(self):
         """导出按钮点击事件"""
 
-        def changeExportStatusEnable() -> None:
-            """改变状态栏状态"""
-            if self.stateTooltip:
-                self.stateTooltip.setContent("文件导出成功" + " 😆")
-                self.stateTooltip.setState(True)
-                self.stateTooltip = None
-            else:
-                self.stateTooltip = StateToolTip("导出中", "请稍后", self.window())
-                self.stateTooltip.move(self.stateTooltip.getSuitablePos())
-                self.stateTooltip.show()
-
-        def exportToExcel():
-            """导出页面为xlsx文件"""
-            # 创建 excel 文件
-            excelApp = xw.App(False, False)
-            excelFile = excelApp.books.add()
-            excelFile.sheets.add("sheet")
-            # 设置表头
-            sheet = excelFile.sheets[0]
-            headers = {"A": "学号", "B": "姓名", "C": "专业", "D": "班级", "E": "年龄", "F": "成绩"}
-            for i, header in headers.items():
-                sheet[i + "1"].value = header
-            hight = 2
-            for page in self.tableData:
-                for line in page:
-                    for header, cell in zip(headers.keys(), line):
-                        sheet["{}{}".format(header, hight)].value = str(cell)
-                    hight += 1
-            # 保存信息
-            excelFile.save("学生信息表.xlsx")
-            excelFile.close()
-            excelApp.quit()
-
         # 显示状态栏
-        changeExportStatusEnable()
-        # 异步线程导出文件
-        thread = Thread(target=exportToExcel)
-        thread.start()
-        thread.join()
-        # 关闭状态栏
-        changeExportStatusEnable()
+        self.stateTooltip = StateToolTip("导出中", "请稍后", self.window())
+        self.stateTooltip.move(self.stateTooltip.getSuitablePos())
+        self.stateTooltip.show()
+        # 禁用按钮
+        self.exportBtn.setEnabled(False)
+        # 异步导出
+        self.exportThread.start()
 
     def closeEvent(self, a0: QCloseEvent) -> None:
         """程序结束"""

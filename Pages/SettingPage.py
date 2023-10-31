@@ -9,8 +9,8 @@ from qfluentwidgets import (
     FluentIcon,
     setTheme
 )
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget
+from PyQt6.QtCore import Qt
 from Shared.config import cfg, getTransparentQss
 
 
@@ -50,7 +50,7 @@ class SettingPage(ScrollArea):
         self.initWidget()
 
     def initWidget(self):
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff) 
         self.setWidget(self.scrollWidget)
         self.setWidgetResizable(True)
         #利用qss设置页面背景和边框，不然会有默认背景色和奇怪的边框

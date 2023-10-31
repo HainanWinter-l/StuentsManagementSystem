@@ -7,9 +7,8 @@ from qfluentwidgets import (
     isDarkTheme,
     CustomStyleSheet,
 )
-from PyQt5.QtGui import QIcon, QImage
-from PyQt5.QtWidgets import QApplication
-from sqlalchemy import true
+from PyQt6.QtGui import QIcon, QImage
+from PyQt6.QtWidgets import QApplication
 from Pages.HomePage import HomePage
 from Pages.ManagementPage import ManagementPage
 from Pages.InfoPage import InfoPage
@@ -17,6 +16,7 @@ from Pages.SettingPage import SettingPage
 from time import sleep, time
 from pyodbc import Row
 from webbrowser import open_new_tab
+
 
 class MyMainWindow(MSFluentWindow):
     def __init__(self):
@@ -88,7 +88,9 @@ class MyMainWindow(MSFluentWindow):
         """刷新首页的数据"""
         studentCount, gpaCount, gradeCount = self.getHomePageData()
         self.homePage.studentCountLabel.setText("{} 人".format(studentCount))
-        self.homePage.studentGpaLabel.setText("{:.2f}%".format(100*(gpaCount / studentCount)))
+        self.homePage.studentGpaLabel.setText(
+            "{:.2f}%".format(100 * (gpaCount / studentCount))
+        )
         self.homePage.gradeCountLabel.setText("{} 个".format(gradeCount))
         self.homePage.avgStudentCountLabel.setText(
             "{:.2f} 人".format(studentCount / gradeCount)
@@ -102,12 +104,12 @@ class MyMainWindow(MSFluentWindow):
         self.addSubInterface(self.homePage, FluentIcon.HOME, "首页")
         self.addSubInterface(self.managementPage, FluentIcon.PEOPLE, "管理")
         self.addSubInterface(self.infoPage, FluentIcon.INFO, "关于")
-        
+
         self.navigationInterface.addWidget(
-            routeKey='avatar',
+            routeKey="avatar",
             widget=NavigationBarPushButton(FluentIcon.GITHUB, "Github", False),
             onClick=self.openGithub,
-            position=NavigationItemPosition.BOTTOM
+            position=NavigationItemPosition.BOTTOM,
         )
         self.addSubInterface(
             self.settingPage,
@@ -134,10 +136,12 @@ class MyMainWindow(MSFluentWindow):
         self.splashScreen.setIconSize(self.size())
         self.splashScreen.raise_()
         # 设置窗口居中显示
-        desktop = QApplication.desktop().availableGeometry()
+        desktop = QApplication.primaryScreen().size()
+        size = self.geometry()
         width, height = desktop.width(), desktop.height()
         self.move(
-            (width >> 1) - (self.width() >> 1), (height >> 1) - (self.height() >> 1)
+            (desktop.width() - size.width()) >> 1,
+            (desktop.height() - size.height()) >> 1,
         )
         self.show()
         QApplication.processEvents()

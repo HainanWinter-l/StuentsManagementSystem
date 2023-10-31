@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget
 from Design.Ui_InfoPage import Ui_InfoPage
 from webbrowser import open_new_tab
 

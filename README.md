@@ -6,7 +6,7 @@
 
 ## 所用开源项目
 
-[PyQt5](https://www.riverbankcomputing.com/software/pyqt/)
+[PyQt6](https://www.riverbankcomputing.com/software/pyqt/)
 
 [pyobdc](https://github.com/mkleehammer/pyodbc)
 
