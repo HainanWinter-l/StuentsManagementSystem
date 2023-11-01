@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import QTimer, QTime
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QPixmap
 from Design.Ui_HomePage import Ui_HomePage
 
 class HomePage(QWidget, Ui_HomePage):
@@ -12,7 +12,7 @@ class HomePage(QWidget, Ui_HomePage):
         timer.timeout.connect(self.showTime)
         timer.start(1000)
         self.setupUi(self)
-        self.IconWidget.setWindowIcon(QIcon("Resource/image/logo.png"))
+        self.ImageLabel.setImage(QPixmap("Resource/image/logo.png"))
         self.lcdNumber.display(QTime.currentTime().toString("hh:mm:ss"))
 
     def showTime(self):

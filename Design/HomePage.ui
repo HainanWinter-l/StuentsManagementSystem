@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>718</width>
+    <width>728</width>
     <height>527</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -620,6 +626,22 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_8">
        <item>
+        <spacer name="verticalSpacer_14">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <layout class="QHBoxLayout" name="horizontalLayout_8">
          <item>
           <spacer name="horizontalSpacer_4">
@@ -638,13 +660,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="IconWidget" name="IconWidget">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+          <widget class="ImageLabel" name="ImageLabel">
            <property name="minimumSize">
             <size>
              <width>180</width>
@@ -656,10 +672,6 @@
              <width>400</width>
              <height>400</height>
             </size>
-           </property>
-           <property name="icon">
-            <iconset>
-             <normaloff>../Resource/image/logo.png</normaloff>../Resource/image/logo.png</iconset>
            </property>
           </widget>
          </item>
@@ -807,11 +819,6 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>IconWidget</class>
-   <extends>QWidget</extends>
-   <header>qfluentwidgets</header>
-  </customwidget>
-  <customwidget>
    <class>HorizontalSeparator</class>
    <extends>QWidget</extends>
    <header>qfluentwidgets</header>
@@ -846,6 +853,11 @@
   </customwidget>
   <customwidget>
    <class>LargeTitleLabel</class>
+   <extends>QLabel</extends>
+   <header>qfluentwidgets</header>
+  </customwidget>
+  <customwidget>
+   <class>ImageLabel</class>
    <extends>QLabel</extends>
    <header>qfluentwidgets</header>
   </customwidget>
