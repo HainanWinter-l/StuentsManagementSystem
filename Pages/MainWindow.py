@@ -122,7 +122,7 @@ class MyMainWindow(MSFluentWindow):
     def initWindow(self):
         """初始化主窗口基本信息"""
         self.setWindowTitle("学生管理系统")  # 标题
-        self.setWindowIcon(QIcon("Resource/image/logo.png"))  # 图标
+        self.setWindowIcon(QIcon(resourcePath("Resource/image/logo.png")))  # 图标
         self.setMinimumWidth(960)  # 最小宽度
         self.setMinimumHeight(740)  # 最小高度
         self.resize(980, 760)  # 窗口尺寸
