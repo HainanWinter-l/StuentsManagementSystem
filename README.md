@@ -14,6 +14,23 @@
 
 [xlwings](https://www.xlwings.org/)
 
+## 开始
+
+### 说明
+
+本项目提供了python venv环境（目录下env文件夹中），可直接切换虚拟环境运行程序
+
+### 若要自行搭建环境运行，请参考以下代码
+
+```shell
+# 安装项目的依赖
+pip install -r requirements.txt
+# 运行代码
+python -u Program.py
+# 构建项目
+pyinstaller Program.spec
+```
+
 ## 开源协议
 
 MIT
