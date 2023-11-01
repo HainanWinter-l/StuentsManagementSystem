@@ -16,7 +16,6 @@ from Pages.SettingPage import SettingPage
 from time import sleep, time
 from pyodbc import Row
 from webbrowser import open_new_tab
-from Shared.config import resourcePath
 
 
 class MyMainWindow(MSFluentWindow):
@@ -122,7 +121,7 @@ class MyMainWindow(MSFluentWindow):
     def initWindow(self):
         """初始化主窗口基本信息"""
         self.setWindowTitle("学生管理系统")  # 标题
-        self.setWindowIcon(QIcon(resourcePath("Resource/image/logo.png")))  # 图标
+        self.setWindowIcon(QIcon("Resource/image/logo.png"))  # 图标
         self.setMinimumWidth(960)  # 最小宽度
         self.setMinimumHeight(740)  # 最小高度
         self.resize(980, 760)  # 窗口尺寸
@@ -131,11 +130,11 @@ class MyMainWindow(MSFluentWindow):
         # 启动界面
         if isDarkTheme():
             self.splashScreen = SplashScreen(
-                resourcePath("Resource/image/ncst-light.png"), self
+                "Resource/image/ncst-light.png", self
             )
         else:
             self.splashScreen = SplashScreen(
-                resourcePath("Resource/image/ncst-dark.png"), self
+                "Resource/image/ncst-dark.png", self
             )
         self.splashScreen.resize(self.size())
         self.splashScreen.setIconSize(self.size())

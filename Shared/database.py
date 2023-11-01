@@ -1,8 +1,7 @@
 from pyodbc import connect, Connection, Cursor, Row
 from Class.Student import Student
-from Shared.config import resourcePath
 
-FilePath = resourcePath("Data/Database.accdb")
+FilePath = "Data/Database.accdb"
 
 
 def initDatabase() -> Connection:
