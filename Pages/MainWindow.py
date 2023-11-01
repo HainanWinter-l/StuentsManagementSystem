@@ -16,6 +16,7 @@ from Pages.SettingPage import SettingPage
 from time import sleep, time
 from pyodbc import Row
 from webbrowser import open_new_tab
+from Shared.config import resourcePath
 
 
 class MyMainWindow(MSFluentWindow):
@@ -129,9 +130,13 @@ class MyMainWindow(MSFluentWindow):
 
         # 启动界面
         if isDarkTheme():
-            self.splashScreen = SplashScreen("Resource/image/ncst-light.png", self)
+            self.splashScreen = SplashScreen(
+                resourcePath("Resource/image/ncst-light.png"), self
+            )
         else:
-            self.splashScreen = SplashScreen("Resource/image/ncst-dark.png", self)
+            self.splashScreen = SplashScreen(
+                resourcePath("Resource/image/ncst-dark.png"), self
+            )
         self.splashScreen.resize(self.size())
         self.splashScreen.setIconSize(self.size())
         self.splashScreen.raise_()
