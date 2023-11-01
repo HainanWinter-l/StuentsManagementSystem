@@ -7,7 +7,7 @@ from qfluentwidgets import (
     isDarkTheme,
     CustomStyleSheet,
 )
-from PyQt6.QtGui import QIcon, QImage
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 from Pages.HomePage import HomePage
 from Pages.ManagementPage import ManagementPage
