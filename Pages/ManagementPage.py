@@ -599,7 +599,8 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         """清空输入的搜索文本事件"""
         for tbx in self.tbxs.keys():
             tbx.setText("")
-
+            tbx.setEnabled(True)
+        self.queryBtn.setEnabled(True)
         # 显示数据库全部内容
         self.isHasData = False
         self.freshThread.start()
@@ -639,6 +640,10 @@ class ManagementPage(QWidget, Ui_ManagementPage):
         self.tableData = self.getDataFromDataBase(
             searchStudent(self.db, self.cur, self.command)
         )
+        # 禁用文本框
+        for i in self.tbxs.keys():
+            i.setEnabled(False)
+        self.queryBtn.setEnabled(False)
         self.isHasData = True
         self.freshThread.start()
 
