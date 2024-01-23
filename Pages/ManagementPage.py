@@ -1,5 +1,5 @@
-import xlwings as xw
-from pyodbc import Row
+from xlwt import Workbook
+from sqlite3 import Row
 from qfluentwidgets import (
     Flyout,
     FluentIcon,
@@ -44,24 +44,20 @@ class excelExporter(QThread):
     def export(self) -> None:
         """导出页面为xlsx文件"""
         # 创建 excel 文件
-        excelApp = xw.App(False)
-        excelFile = excelApp.books.add()
-        excelFile.sheets.add("sheet")
+        excelFile = Workbook(encoding="utf_8")
+        sheet = excelFile.add_sheet("sheet")
         # 设置表头
-        sheet = excelFile.sheets[0]
-        headers = {"A": "学号", "B": "姓名", "C": "专业", "D": "班级", "E": "年龄", "F": "成绩"}
-        for i, header in headers.items():
-            sheet[i + "1"].value = header
-        hight = 2
+        headers = ["学号", "姓名", "专业", "班级", "年龄", "成绩"]
+        for i, header in zip(range(len(headers)), headers):
+            sheet.write(0, i, header)
+        hight = 1
         for page in self.page.tableData:
             for line in page:
-                for header, cell in zip(headers.keys(), line):
-                    sheet["{}{}".format(header, hight)].value = str(cell)
+                for header, cell in zip(range(len(headers)), line):
+                    sheet.write(hight, header, str(cell))
                 hight += 1
         # 保存信息
-        excelFile.save("学生信息表.xlsx")
-        excelFile.close()
-        excelApp.quit()
+        excelFile.save("学生信息表.xls")
 
     def closeTipAndEnableBtn(self) -> None:
         """清空提示并启用按钮"""

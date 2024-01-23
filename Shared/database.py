@@ -1,12 +1,12 @@
-from pyodbc import connect, Connection, Cursor, Row
+from sqlite3 import connect, Connection, Cursor, Row
 from Class.Student import Student
 
-FilePath = "Data/Database.accdb"
+FilePath = "Data/Database.db"
 
 
 def initDatabase() -> Connection:
     """连接数据库并返回连接"""
-    db = connect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=" + FilePath)
+    db = connect(FilePath, check_same_thread=False)
     return db
 
 
