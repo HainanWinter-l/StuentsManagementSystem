@@ -1,0 +1,11 @@
+# .gitignore
+build/
+**/__pycache__/
+*.spec
+*.build
+.cache/
+*.dist/
+*.onefile-build
+*.bin
+*.xls
+*.json

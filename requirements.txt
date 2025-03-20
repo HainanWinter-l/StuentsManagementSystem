@@ -1,0 +1,5 @@
+pyodbc==5.2.0
+PyQt6==6.8.1
+PyQt6_Fluent_Widgets==1.7.6
+PyQt6_sip==13.10.0
+xlwt==1.3.0
