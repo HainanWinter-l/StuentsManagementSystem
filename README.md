@@ -49,7 +49,7 @@
 - 从 github 上克隆项目到本地文件夹。
 
 ```bash
-git clone https://github.com/HainanWinter-l/StuentsManagementSystem.git
+git clone --single-branch https://github.com/HainanWinter-l/StuentsManagementSystem.git
 ```
 
 #### 通过 github 自带办法下载
